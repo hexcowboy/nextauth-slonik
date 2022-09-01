@@ -1,16 +1,19 @@
 {
   "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
     "declaration": true,
-    "strictNullChecks": true,
-    "target": "es5",
-    "outDir": "dist",
+    "esModuleInterop": true,
     "module": "commonjs",
+    "lib": ["es2021"],
     "moduleResolution": "node",
-    "sourceMap": true,
-    "lib": ["es2015", "dom"],
-    "rootDir": "src",
-    "skipLibCheck": true
+    "noImplicitAny": false,
+    "noImplicitReturns": true,
+    "useUnknownInCatchVariables": false,
+    "outDir": "dist",
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "es2018"
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist"]
+  "exclude": ["dist", "node_modules"],
+  "include": ["src"]
 }

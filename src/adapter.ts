@@ -19,7 +19,7 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
       const emailVerifiedDate = emailVerified ? sql.date(emailVerified) : null;
       const result: AdapterUser = await client.one(
         sql`
-          insert into verification_token
+          insert into users
             (name, email, email_verified, image)
           values
             (
@@ -200,6 +200,7 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
               and provider = ${provider}
           `
         );
+        return;
       } catch (e) {
         // Throws error unless the record was simply not found
         if (e instanceof NotFoundError) {
