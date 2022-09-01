@@ -16,7 +16,6 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
       emailVerified,
       image,
     }: Partial<AdapterUser>) {
-      console.log("CREATE");
       const emailVerifiedDate = emailVerified
         ? sql.timestamp(emailVerified)
         : null;
@@ -39,7 +38,6 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
     },
 
     async getUser(id) {
-      console.log("GET USR");
       try {
         const result: AdapterUser = await client.one(
           sql`
@@ -61,7 +59,6 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
     },
 
     async getUserByEmail(email) {
-      console.log("GET USR EML");
       try {
         const result: AdapterUser = await client.one(
           sql`
@@ -83,7 +80,6 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
     },
 
     async getUserByAccount({ providerAccountId, provider }) {
-      console.log("GET USR ACCT");
       try {
         const result: AdapterUser = await client.one(
           sql`
@@ -109,7 +105,6 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
     },
 
     async updateUser({ id, ...updates }) {
-      console.log("UPDATE USR");
       if (!id) {
         throw new Error("ID not provided for updateUser");
       }
@@ -175,7 +170,6 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
       session_state,
       token_type,
     }) {
-      console.log("LINK ACCT");
       const result: Account = await client.one(
         sql`
           insert into accounts
@@ -221,7 +215,6 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
     },
 
     async createSession({ sessionToken, userId, expires }) {
-      console.log({ sessionToken, userId, expires });
       const result: AdapterSession = await client
         .one(
           sql`
@@ -239,12 +232,10 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
             expires: new Date(result.expires as number),
           } as AdapterSession;
         });
-      console.log({ ...result, expires: new Date(result.expires) });
       return result;
     },
 
     async getSessionAndUser(sessionToken) {
-      console.log("ONE", sessionToken);
       let sessionResult: AdapterSession = await client
         .one(
           sql`
@@ -261,7 +252,6 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
           } as AdapterSession;
         });
 
-      console.log("TWOO");
       const userResult: AdapterUser = await client.one(
         sql`
           select
@@ -278,7 +268,6 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
     },
 
     async updateSession({ sessionToken, ...updates }) {
-      console.log("UPDATE SESSION", sessionToken);
       const session: AdapterSession = await client
         .one(
           sql`
@@ -318,13 +307,10 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
           } as AdapterSession;
         });
 
-      console.log("FINISH UPDATE SESSION", result);
-
       return result;
     },
 
     async deleteSession(sessionToken) {
-      console.log("DEL SESSION", sessionToken);
       await client.one(
         sql`
           delete from sessions
@@ -334,7 +320,6 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
     },
 
     async createVerificationToken({ identifier, expires, token }) {
-      console.log("CRT VRF TKN");
       const result: VerificationToken = await client
         .one(
           sql`
@@ -356,7 +341,6 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
     },
 
     async useVerificationToken({ identifier, token }) {
-      console.log("USE VRF TKN");
       try {
         const result: VerificationToken = await client
           .one(
