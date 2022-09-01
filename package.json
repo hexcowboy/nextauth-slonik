@@ -1,11 +1,11 @@
 {
   "name": "nextauth-slonik",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "author": "hexcowboy",
   "license": "MIT",
   "description": "A Slonik adapter for NextAuth",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/hexcowboy/nextauth-slonik"
