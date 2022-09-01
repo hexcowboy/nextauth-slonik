@@ -15,21 +15,21 @@ pnpm install nextauth-slonik
 ## Usage
 
 ```ts
-import NextAuth from "next-auth";
-import SlonikAdapter from "nextauth-slonik/dist/adapter";
+import NextAuth, { NextAuthOptions } from "next-auth";
+import SlonikAdapter from "nextauth-slonik";
 import { createPool } from "slonik";
 
-const pool = createPool("postgres://").then((pool) => {
-  return pool;
-});
+// Enable top level await: https://stackoverflow.com/a/68339259
+const pool = await createPool("postgres://");
 
-export default NextAuth({
+export const auth: NextAuthOptions = {
   adapter: SlonikAdapter(pool),
   providers: [
     ...
   ],
-});
+};
 
+export default NextAuth(auth);
 ```
 
 ## Example Schema
@@ -72,5 +72,4 @@ create table if not exists users (
   email_verified timestamptz,
   image text
 );
-
 ```

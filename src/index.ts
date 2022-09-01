@@ -1,1 +1,2 @@
-export * from "./adapter";
+import SlonikAdapter from "./adapter";
+export default SlonikAdapter;
