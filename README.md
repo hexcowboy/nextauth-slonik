@@ -2,6 +2,36 @@
 
 A Slonik adapter for NextAuth. The heavy work for this project was done in this PR: https://github.com/nextauthjs/next-auth/pull/4933
 
+## Install
+
+```bash
+npm i nextauth-slonik
+# or yarn
+yarn add nextauth-slonik
+# or pnpm
+pnpm install nextauth-slonik
+```
+
+## Usage
+
+```ts
+import NextAuth from "next-auth";
+import SlonikAdapter from "nextauth-slonik/dist/adapter";
+import { createPool } from "slonik";
+
+const pool = createPool("postgres://").then((pool) => {
+  return pool;
+});
+
+export default NextAuth({
+  adapter: SlonikAdapter(pool),
+  providers: [
+    ...
+  ],
+});
+
+```
+
 ## Example Schema
 
 ```sql
