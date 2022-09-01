@@ -25,14 +25,14 @@ create table if not exists accounts (
   id_token text,
   scope text,
   session_state text,
-  token_type text,
+  token_type text
 );
 
 create table if not exists sessions (
   id serial primary key,
   user_id integer not null,
   expires timestamptz not null,
-  session_token varchar(255) not null,
+  session_token varchar(255) not null
 );
 
 create table if not exists users (
@@ -40,7 +40,7 @@ create table if not exists users (
   name varchar(255),
   email varchar(255),
   email_verified timestamptz,
-  image text,
+  image text
 );
 
 ```
