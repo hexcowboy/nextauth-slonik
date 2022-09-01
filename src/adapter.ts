@@ -10,13 +10,22 @@ import { type DatabasePool, sql, NotFoundError } from "slonik";
 /** @return { import("next-auth/adapters").Adapter } */
 export default function SlonikAdapter(client: DatabasePool): Adapter {
   return {
-    async createUser({ name, email, emailVerified, image }) {
+    async createUser({
+      name,
+      email,
+      emailVerified,
+      image,
+    }: Partial<AdapterUser>) {
+      const emailVerifiedDate = emailVerified ? sql.date(emailVerified) : null;
       const result: AdapterUser = await client.one(
         sql`
           insert into verification_token
             (name, email, email_verified, image)
           values
-            (${name}, ${email}, ${emailVerified}, ${image})
+            (
+              ${name || null}, ${email || null}, ${emailVerifiedDate},
+              ${image || null}
+            )
           returning
             name, email, image, email_verified as emailVerified
         `
@@ -92,6 +101,10 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
     },
 
     async updateUser({ id, ...updates }) {
+      if (!id) {
+        throw new Error("ID not provided for updateUser");
+      }
+
       const user: AdapterUser = await client.one(
         sql`
           select
@@ -106,15 +119,16 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
         ...updates,
       };
 
+      const emailVerifiedDate = emailVerified ? sql.date(emailVerified) : null;
       const result: AdapterUser = await client.one(
         sql`
           update users
           set
-            name = ${name},
-            email = ${email},
-            email_verified = ${emailVerified},
-            image = ${image}
-          where id = ${id}
+            name = ${name || null},
+            email = ${email || null},
+            email_verified = ${emailVerifiedDate},
+            image = ${image || null}
+          where id = ${id || null}
           returning
             name, email, email_verified as emailVerified, image
         `
@@ -160,9 +174,13 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
             )
           values
             (
-              ${userId}, ${provider}, ${type}, ${providerAccountId}, ${access_token},
-              ${expires_at}, ${refresh_token}, ${id_token}, ${scope}, ${session_state},
-              ${token_type}
+              ${userId}, ${provider}, ${type}, ${providerAccountId}, ${
+          access_token || ""
+        },
+              ${expires_at || null}, ${refresh_token || null}, ${
+          id_token || null
+        }, ${scope || null},
+              ${session_state || null}, ${token_type || null}
             )
           returning
             user_id as userId, provider, type, provider_account_id as providerAccountId,
@@ -198,7 +216,7 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
           insert into sessions
             (user_id, expires, session_token)
           values
-            (${userId}, ${expires}, ${sessionToken})
+            (${userId}, ${sql.date(expires)}, ${sessionToken})
           returning
             id, user_id as userId, expires, session_token as sessionToken
         `
@@ -250,7 +268,7 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
         sql`
           update sessions
           set
-            user_id = ${userId}, expires = ${expires}
+            user_id = ${userId}, expires = ${sql.date(expires)}
           where session_token = ${sessionToken}
         `
       );
@@ -268,22 +286,22 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
     },
 
     async createVerificationToken({ identifier, expires, token }) {
-      const result = await client.one(
+      const result: VerificationToken = await client.one(
         sql`
           insert into verification_token
             (identifier, expires, token)
           values
-            (${identifier}, ${expires}, ${token})
+            (${identifier}, ${sql.date(expires)}, ${token})
           returning
             identifier, expires, token
         `
       );
-      return result as VerificationToken;
+      return result;
     },
 
     async useVerificationToken({ identifier, token }) {
       try {
-        const result = await client.one(
+        const result: VerificationToken = await client.one(
           sql`
             delete from verification_token
             where identifier = ${identifier}
@@ -291,7 +309,7 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
             returning identifier, expires, token
           `
         );
-        return result as VerificationToken;
+        return result;
       } catch (e) {
         // Throws error unless the record was simply not found
         if (e instanceof NotFoundError) {
