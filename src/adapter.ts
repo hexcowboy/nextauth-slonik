@@ -16,7 +16,11 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
       emailVerified,
       image,
     }: Partial<AdapterUser>) {
-      const emailVerifiedDate = emailVerified ? sql.date(emailVerified) : null;
+      console.log("CREATE");
+      const emailVerifiedDate = emailVerified
+        ? sql.timestamp(emailVerified)
+        : null;
+
       const result: AdapterUser = await client.one(
         sql`
           insert into users
@@ -27,18 +31,20 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
               ${image || null}
             )
           returning
-            name, email, image, email_verified as emailVerified
+            id, name, email, image, email_verified as "emailVerified"
         `
       );
+
       return result;
     },
 
     async getUser(id) {
+      console.log("GET USR");
       try {
         const result: AdapterUser = await client.one(
           sql`
             select
-              id, name, image, email, email_verified as emailVerified
+              id, name, image, email, email_verified as "emailVerified"
             from users
             where users.id = ${id}
           `
@@ -55,11 +61,12 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
     },
 
     async getUserByEmail(email) {
+      console.log("GET USR EML");
       try {
         const result: AdapterUser = await client.one(
           sql`
             select
-              id, name, image, email, email_verified as emailVerified
+              id, name, image, email, email_verified as "emailVerified"
             from users
             where users.email = ${email}
           `
@@ -76,12 +83,13 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
     },
 
     async getUserByAccount({ providerAccountId, provider }) {
+      console.log("GET USR ACCT");
       try {
         const result: AdapterUser = await client.one(
           sql`
             select
               users.id, users.name, users.image, users.email,
-              users.email_verified as emailVerified
+              users.email_verified as "emailVerified"
             from users
             inner join accounts
               on users.id = accounts.user_id
@@ -101,6 +109,7 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
     },
 
     async updateUser({ id, ...updates }) {
+      console.log("UPDATE USR");
       if (!id) {
         throw new Error("ID not provided for updateUser");
       }
@@ -108,7 +117,7 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
       const user: AdapterUser = await client.one(
         sql`
           select
-            id, name, image, email, email_verified as emailVerified
+            id, name, image, email, email_verified as "emailVerified"
           from users
           where users.id = ${id}
         `
@@ -119,7 +128,9 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
         ...updates,
       };
 
-      const emailVerifiedDate = emailVerified ? sql.date(emailVerified) : null;
+      const emailVerifiedDate = emailVerified
+        ? sql.timestamp(emailVerified)
+        : null;
       const result: AdapterUser = await client.one(
         sql`
           update users
@@ -130,7 +141,7 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
             image = ${image || null}
           where id = ${id || null}
           returning
-            name, email, email_verified as emailVerified, image
+            name, email, email_verified as "emailVerified", image
         `
       );
 
@@ -164,6 +175,7 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
       session_state,
       token_type,
     }) {
+      console.log("LINK ACCT");
       const result: Account = await client.one(
         sql`
           insert into accounts
@@ -174,16 +186,13 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
             )
           values
             (
-              ${userId}, ${provider}, ${type}, ${providerAccountId}, ${
-          access_token || ""
-        },
-              ${expires_at || null}, ${refresh_token || null}, ${
-          id_token || null
-        }, ${scope || null},
+              ${userId}, ${provider}, ${type}, ${providerAccountId},
+              ${access_token || null}, ${expires_at || null},
+              ${refresh_token || null}, ${id_token || null}, ${scope || null},
               ${session_state || null}, ${token_type || null}
             )
           returning
-            user_id as userId, provider, type, provider_account_id as providerAccountId,
+            user_id as "userId", provider, type, provider_account_id as "providerAccountId",
             access_token, expires_at, refresh_token, id_token, scope, session_state,
             token_type
         `
@@ -212,33 +221,51 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
     },
 
     async createSession({ sessionToken, userId, expires }) {
-      const result: AdapterSession = await client.one(
-        sql`
+      console.log({ sessionToken, userId, expires });
+      const result: AdapterSession = await client
+        .one(
+          sql`
           insert into sessions
             (user_id, expires, session_token)
           values
-            (${userId}, ${sql.date(expires)}, ${sessionToken})
+            (${userId}, ${sql.timestamp(expires)}, ${sessionToken})
           returning
-            id, user_id as userId, expires, session_token as sessionToken
+            id, user_id as "userId", expires, session_token as "sessionToken"
         `
-      );
+        )
+        .then((result) => {
+          return {
+            ...result,
+            expires: new Date(result.expires as number),
+          } as AdapterSession;
+        });
+      console.log({ ...result, expires: new Date(result.expires) });
       return result;
     },
 
     async getSessionAndUser(sessionToken) {
-      const sessionResult: AdapterSession = await client.one(
-        sql`
+      console.log("ONE", sessionToken);
+      let sessionResult: AdapterSession = await client
+        .one(
+          sql`
           select
-            id, session_token as sessionToken, user_id as userId, expires
+            id, session_token as "sessionToken", user_id as "userId", expires
           from sessions
           where session_token = ${sessionToken}
         `
-      );
+        )
+        .then((result) => {
+          return {
+            ...result,
+            expires: new Date(result.expires as number),
+          } as AdapterSession;
+        });
 
+      console.log("TWOO");
       const userResult: AdapterUser = await client.one(
         sql`
           select
-            id, name, image, email, email_verified as emailVerified
+            id, name, image, email, email_verified as "emailVerified"
           from users
           where users.id = ${sessionResult.userId}
         `
@@ -251,33 +278,53 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
     },
 
     async updateSession({ sessionToken, ...updates }) {
-      const session: AdapterSession = await client.one(
-        sql`
+      console.log("UPDATE SESSION", sessionToken);
+      const session: AdapterSession = await client
+        .one(
+          sql`
           select
-            id, session_token as sessionToken, user_id as userId, expires
+            id, session_token as "sessionToken", user_id as "userId", expires
           from sessions
           where session_token = ${sessionToken}
         `
-      );
+        )
+        .then((result) => {
+          return {
+            ...result,
+            expires: new Date(result.expires as number),
+          } as AdapterSession;
+        });
 
       const { userId, expires } = {
         ...session,
         ...updates,
       };
 
-      const result: AdapterSession = await client.one(
-        sql`
+      const result: AdapterSession = await client
+        .one(
+          sql`
           update sessions
           set
-            user_id = ${userId}, expires = ${sql.date(expires)}
+            user_id = ${userId}, expires = ${sql.timestamp(expires)}
           where session_token = ${sessionToken}
+          returning
+            id, session_token as "sessionToken", user_id as "userId", expires
         `
-      );
+        )
+        .then((result) => {
+          return {
+            ...result,
+            expires: new Date(result.expires as number),
+          } as AdapterSession;
+        });
+
+      console.log("FINISH UPDATE SESSION", result);
 
       return result;
     },
 
     async deleteSession(sessionToken) {
+      console.log("DEL SESSION", sessionToken);
       await client.one(
         sql`
           delete from sessions
@@ -287,29 +334,45 @@ export default function SlonikAdapter(client: DatabasePool): Adapter {
     },
 
     async createVerificationToken({ identifier, expires, token }) {
-      const result: VerificationToken = await client.one(
-        sql`
+      console.log("CRT VRF TKN");
+      const result: VerificationToken = await client
+        .one(
+          sql`
           insert into verification_token
             (identifier, expires, token)
           values
-            (${identifier}, ${sql.date(expires)}, ${token})
+            (${identifier}, ${sql.timestamp(expires)}, ${token})
           returning
             identifier, expires, token
         `
-      );
+        )
+        .then((result) => {
+          return {
+            ...result,
+            expires: new Date(result.expires as number),
+          } as VerificationToken;
+        });
       return result;
     },
 
     async useVerificationToken({ identifier, token }) {
+      console.log("USE VRF TKN");
       try {
-        const result: VerificationToken = await client.one(
-          sql`
+        const result: VerificationToken = await client
+          .one(
+            sql`
             delete from verification_token
             where identifier = ${identifier}
               and token = ${token}
             returning identifier, expires, token
           `
-        );
+          )
+          .then((result) => {
+            return {
+              ...result,
+              expires: new Date(result.expires as number),
+            } as VerificationToken;
+          });
         return result;
       } catch (e) {
         // Throws error unless the record was simply not found

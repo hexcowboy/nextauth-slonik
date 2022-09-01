@@ -1,6 +1,6 @@
 {
   "name": "nextauth-slonik",
-  "version": "1.0.8",
+  "version": "1.0.12",
   "author": "hexcowboy",
   "license": "MIT",
   "description": "A Slonik adapter for NextAuth",
